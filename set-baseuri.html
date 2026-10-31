@@ -75,15 +75,17 @@ $("connect").onclick = async () => {
 };
 $("send").onclick = async () => {
   try {
-    const cid = $("cid").value.trim().replace(/^ipfs:\/\//,"").replace(/\/+$/,"");
-    if (!cid) { $("status").textContent = "Isi dulu Metadata CID-nya."; return; }
+    const rawIn = $("cid").value.trim();
+    if (rawIn.includes("METADATA_CID") || rawIn.includes("<") || rawIn.includes(">")) { $("status").textContent = "DITOLAK: itu masih placeholder <METADATA_CID>, bukan CID asli. Pin folder metadata dulu, lalu isi CID aslinya saja."; return; }
+    if (rawIn.includes(".json")) { $("status").textContent = "DITOLAK: jangan isi dengan .../1.json - isi CID-nya saja, halaman yang menambahkan ipfs:// dan / di akhir."; return; }
+    const uri = parseBaseURI(rawIn);
+    if (!uri) { $("status").textContent = "Isi dulu Metadata CID atau baseURI lengkapnya."; return; }
     if (!contract) { $("status").textContent = "Hubungkan My Wallet dulu."; return; }
-    const uri = "ipfs://" + cid + "/";
-    $("status").textContent = "Mengirim setBaseURI(" + uri + ") — konfirmasi di wallet...";
+    $("status").textContent = "Mengirim setBaseURI(" + uri + ") - konfirmasi di wallet...";
     const tx = await contract.setBaseURI(uri);
-    $("status").textContent = "Transaksi terkirim: " + tx.hash + " — menunggu konfirmasi...";
+    $("status").textContent = "Transaksi terkirim: " + tx.hash + " - menunggu konfirmasi...";
     await tx.wait();
-    $("status").textContent = "✓ Sukses! Tx: " + tx.hash + " — baseURI sekarang " + uri;
+    $("status").textContent = "Sukses! Tx: " + tx.hash + " - baseURI sekarang " + uri;
   } catch (e) { $("status").textContent = "Gagal: " + (e.message || e); }
 };
 $("check").onclick = async () => {
