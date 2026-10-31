@@ -45,6 +45,10 @@ const OWNER = "0x504b36A0846Eb67F3f9Cdd5CDf074E26186d38E8";
 const ABI = ["function setBaseURI(string baseURI_) external","function tokenURI(uint256 tokenId) public view returns (string)","function owner() public view returns (address)"];
 let provider, signer, contract;
 const $ = id => document.getElementById(id);
+(function(){
+  const q = new URLSearchParams(location.search).get("cid");
+  if (q) { $("cid").value = q; $("preview").textContent = "ipfs://" + q.replace(/^ipfs:\/\//,"").replace(/\/+$/,"") + "/"; }
+})();
 $("cid").addEventListener("input", () => {
   const v = $("cid").value.trim().replace(/^ipfs:\/\//,"").replace(/\/+$/,"");
   $("preview").textContent = v ? "ipfs://" + v + "/" : "ipfs://<CID>/";
