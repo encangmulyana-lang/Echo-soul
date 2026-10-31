@@ -18,8 +18,8 @@ small{color:#bbb}
 <h1>🎵 Echo Soul — Set BaseURI</h1>
 <p>Halaman ini <b>hanya untuk owner</b>. Hanya wallet owner yang bisa memanggil <code>setBaseURI</code> — wallet lain akan ditolak kontrak (revert), jadi tidak ada risiko orang lain mengubahnya lewat halaman ini.</p>
 <div class="card">
-<p><b>Kontrak:</b> <code>0xEBCD1D87D13F78b8202434d95d400535de06c349</code><br>
-<b>My Wallet (owner):</b> <code>0x504b36A0846Eb67F3f9Cdd5CDf074E26186d38E8</code><br>
+<p><b>Kontrak:</b> <code>0xd1352B183824aF535303FADd7f5C110B22c51b8D</code><br>
+<b>My Wallet (owner):</b> <code>0x68B51957d592581e50A006E56864f07B71C63fA0</code><br>
 <b>Jaringan:</b> BNB Smart Chain Mainnet (chain 56)</p>
 <button id="connect">1. Hubungkan Wallet</button>
 <p id="wallet">Belum terhubung.</p>
@@ -40,8 +40,8 @@ small{color:#bbb}
 </div>
 <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
 <script>
-const CONTRACT = "0xEBCD1D87D13F78b8202434d95d400535de06c349";
-const OWNER = "0x504b36A0846Eb67F3f9Cdd5CDf074E26186d38E8";
+const CONTRACT = "0xd1352B183824aF535303FADd7f5C110B22c51b8D";
+const OWNER = "0x68B51957d592581e50A006E56864f07B71C63fA0";
 const ABI = ["function setBaseURI(string baseURI_) external","function tokenURI(uint256 tokenId) public view returns (string)","function owner() public view returns (address)"];
 let provider, signer, contract;
 const $ = id => document.getElementById(id);
