@@ -19,7 +19,7 @@ small{color:#bbb}
 <p>Halaman ini <b>hanya untuk owner</b>. Hanya wallet owner yang bisa memanggil <code>setBaseURI</code> — wallet lain akan ditolak kontrak (revert), jadi tidak ada risiko orang lain mengubahnya lewat halaman ini.</p>
 <div class="card">
 <p><b>Kontrak:</b> <code>0xEBCD1D87D13F78b8202434d95d400535de06c349</code><br>
-<b>Owner yang benar:</b> <code>0x504b36A0846Eb67F3f9Cdd5CDf074E26186d38E8</code><br>
+<b>My Wallet (owner):</b> <code>0x504b36A0846Eb67F3f9Cdd5CDf074E26186d38E8</code><br>
 <b>Jaringan:</b> BNB Smart Chain Mainnet (chain 56)</p>
 <button id="connect">1. Hubungkan Wallet</button>
 <p id="wallet">Belum terhubung.</p>
@@ -64,7 +64,7 @@ $("connect").onclick = async () => {
     const addr = await signer.getAddress();
     contract = new ethers.Contract(CONTRACT, ABI, signer);
     const owner = await contract.owner();
-    $("wallet").textContent = "Terhubung: " + addr + (addr.toLowerCase() === OWNER.toLowerCase() ? " ✓ (ini wallet owner)" : " ⚠️ INI BUKAN WALLET OWNER — transaksi akan ditolak kontrak.");
+    $("wallet").textContent = "Terhubung: " + addr + (addr.toLowerCase() === OWNER.toLowerCase() ? " ✓ (ini My Wallet / owner)" : " ⚠️ INI BUKAN MY WALLET / OWNER — transaksi akan ditolak kontrak.");
     $("send").disabled = false;
   } catch (e) { $("wallet").textContent = "Gagal menghubungkan: " + (e.message || e); }
 };
@@ -72,7 +72,7 @@ $("send").onclick = async () => {
   try {
     const cid = $("cid").value.trim().replace(/^ipfs:\/\//,"").replace(/\/+$/,"");
     if (!cid) { $("status").textContent = "Isi dulu Metadata CID-nya."; return; }
-    if (!contract) { $("status").textContent = "Hubungkan wallet dulu."; return; }
+    if (!contract) { $("status").textContent = "Hubungkan My Wallet dulu."; return; }
     const uri = "ipfs://" + cid + "/";
     $("status").textContent = "Mengirim setBaseURI(" + uri + ") — konfirmasi di wallet...";
     const tx = await contract.setBaseURI(uri);
