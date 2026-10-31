@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Echo Soul — Set Mint Open (Owner Only)</title>
+<style>
+body{font-family:system-ui,sans-serif;max-width:640px;margin:32px auto;padding:0 16px;background:#12081f;color:#fff}
+h1{color:#ffd166}.card{background:#1e1033;border:1px solid #3a2060;border-radius:12px;padding:16px;margin:16px 0}
+button{padding:12px 20px;border-radius:8px;border:0;background:#ff2e88;color:#fff;font-weight:bold;font-size:15px;cursor:pointer}
+button:disabled{opacity:.5}
+code{word-break:break-all;color:#22e6ff}
+.warn{background:#3d1a1a;border-color:#7a2a2a}
+small{color:#bbb}
+</style>
+</head>
+<body>
+<h1>🎵 Echo Soul — Buka Mint</h1>
+<div class="card warn">
+<p><b>Hanya lakukan ini setelah baseURI benar:</b> baseURI harus sudah <code>ipfs://&lt;CID-asli&gt;/</code> (bukan placeholder), dan deck sudah dipublikasikan. Begitu mint dibuka, siapa pun yang memegang SPACE ID Agent ID bisa mint dengan komisi 0.00005 BNB.</p>
+<p><b>Kontrak:</b> <code>0xd1352B183824aF535303FADd7f5C110B22c51b8D</code><br>
+<b>My Wallet (owner):</b> <code>0x68B51957d592581e50A006E56864f07B71C63fA0</code><br>
+<b>Jaringan:</b> BNB Smart Chain Mainnet (56)</p>
+</div>
+<div class="card">
+<button id="connect">1. Hubungkan My Wallet</button>
+<p id="wallet">Belum terhubung.</p>
+<button id="send" disabled>2. Set Mint Open = true</button>
+<p id="status"></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+<script>
+const CONTRACT = "0xd1352B183824aF535303FADd7f5C110B22c51b8D";
+const OWNER = "0x68B51957d592581e50A006E56864f07B71C63fA0";
+const ABI = ["function setMintOpen(bool open) external","function mintOpen() public view returns (bool)","function owner() public view returns (address)"];
+let provider, signer, contract;
+const $ = id => document.getElementById(id);
+$("connect").onclick = async () => {
+  try {
+    if (!window.ethereum) { $("wallet").textContent = "Wallet tidak ditemukan."; return; }
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    const net = await provider.getNetwork();
+    if (net.chainId !== 56n) { $("wallet").textContent = "Jaringan salah: pindah ke BNB Smart Chain Mainnet (56) dulu."; return; }
+    signer = await provider.getSigner();
+    const addr = await signer.getAddress();
+    contract = new ethers.Contract(CONTRACT, ABI, signer);
+    $("wallet").textContent = "Terhubung: " + addr + (addr.toLowerCase() === OWNER.toLowerCase() ? " ✓ (ini My Wallet / owner)" : " ⚠️ INI BUKAN MY WALLET / OWNER — transaksi akan ditolak kontrak.");
+    $("send").disabled = false;
+  } catch (e) { $("wallet").textContent = "Gagal: " + (e.message || e); }
+};
+$("send").onclick = async () => {
+  try {
+    if (!contract) { $("status").textContent = "Hubungkan wallet dulu."; return; }
+    if (!confirm("Buka mint Echo Soul (setMintOpen true)? Pastikan baseURI sudah benar dulu.")) return;
+    $("status").textContent = "Mengirim setMintOpen(true) — konfirmasi di wallet...";
+    const tx = await contract.setMintOpen(true);
+    $("status").textContent = "Transaksi terkirim: " + tx.hash + " — menunggu konfirmasi...";
+    await tx.wait();
+    $("status").textContent = "✓ Sukses! Tx: " + tx.hash + " — mint sekarang TERBUKA.";
+  } catch (e) { $("status").textContent = "Gagal: " + (e.message || e); }
+};
+</script>
+</body>
+</html>

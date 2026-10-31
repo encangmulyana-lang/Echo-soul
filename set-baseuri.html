@@ -26,7 +26,7 @@ small{color:#bbb}
 </div>
 <div class="card">
 <label><b>2. Metadata CID (dari hasil pin folder metadata)</b></label><br><br>
-<input id="cid" placeholder="contoh: QmAbc... atau bafybei... (tanpa ipfs:// dan tanpa / di akhir)">
+<input id="cid" placeholder="CID saja (contoh: QmAbc...) ATAU baseURI lengkap (contoh: ipfs://QmAbc.../)">
 <p><small>BaseURI yang akan dikirim: <code id="preview">ipfs://&lt;CID&gt;/</code> — wajib diakhiri <code>/</code>.</small></p>
 <button id="send" disabled>3. Set BaseURI</button>
 <p id="status"></p>
@@ -47,11 +47,16 @@ let provider, signer, contract;
 const $ = id => document.getElementById(id);
 (function(){
   const q = new URLSearchParams(location.search).get("cid");
-  if (q) { $("cid").value = q; $("preview").textContent = "ipfs://" + q.replace(/^ipfs:\/\//,"").replace(/\/+$/,"") + "/"; }
+  if (q) { $("cid").value = q; $("preview").textContent = parseBaseURI(q); }
 })();
+function parseBaseURI(raw){
+  const v = raw.trim();
+  if (!v) return "";
+  if (v.startsWith("ipfs://") || v.startsWith("http://") || v.startsWith("https://")) return v.endsWith("/") ? v : v + "/";
+  return "ipfs://" + v.replace(/\/+$/,"") + "/";
+}
 $("cid").addEventListener("input", () => {
-  const v = $("cid").value.trim().replace(/^ipfs:\/\//,"").replace(/\/+$/,"");
-  $("preview").textContent = v ? "ipfs://" + v + "/" : "ipfs://<CID>/";
+  $("preview").textContent = parseBaseURI($("cid").value) || "ipfs://<CID>/";
 });
 $("connect").onclick = async () => {
   try {
