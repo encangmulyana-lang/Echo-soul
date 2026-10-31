@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Echo Soul — Set BaseURI (Owner Only)</title>
+<style>
+body{font-family:system-ui,sans-serif;max-width:640px;margin:32px auto;padding:0 16px;background:#12081f;color:#fff}
+h1{color:#ffd166}.card{background:#1e1033;border:1px solid #3a2060;border-radius:12px;padding:16px;margin:16px 0}
+input{width:100%;padding:10px;border-radius:8px;border:1px solid #555;background:#0f0718;color:#fff;font-size:15px;box-sizing:border-box}
+button{padding:12px 20px;border-radius:8px;border:0;background:#ff2e88;color:#fff;font-weight:bold;font-size:15px;cursor:pointer}
+button:disabled{opacity:.5}
+code{word-break:break-all;color:#22e6ff}
+small{color:#bbb}
+</style>
+</head>
+<body>
+<h1>🎵 Echo Soul — Set BaseURI</h1>
+<p>Halaman ini <b>hanya untuk owner</b>. Hanya wallet owner yang bisa memanggil <code>setBaseURI</code> — wallet lain akan ditolak kontrak (revert), jadi tidak ada risiko orang lain mengubahnya lewat halaman ini.</p>
+<div class="card">
+<p><b>Kontrak:</b> <code>0xEBCD1D87D13F78b8202434d95d400535de06c349</code><br>
+<b>Owner yang benar:</b> <code>0x504b36A0846Eb67F3f9Cdd5CDf074E26186d38E8</code><br>
+<b>Jaringan:</b> BNB Smart Chain Mainnet (chain 56)</p>
+<button id="connect">1. Hubungkan Wallet</button>
+<p id="wallet">Belum terhubung.</p>
+</div>
+<div class="card">
+<label><b>2. Metadata CID (dari hasil pin folder metadata)</b></label><br><br>
+<input id="cid" placeholder="contoh: QmAbc... atau bafybei... (tanpa ipfs:// dan tanpa / di akhir)">
+<p><small>BaseURI yang akan dikirim: <code id="preview">ipfs://&lt;CID&gt;/</code> — wajib diakhiri <code>/</code>.</small></p>
+<button id="send" disabled>3. Set BaseURI</button>
+<p id="status"></p>
+</div>
+<div class="card">
+<h3>Cek hasil</h3>
+<p>Setelah transaksi sukses, cek di sini (otomatis setelah kirim, atau klik tombol di bawah):</p>
+<button id="check">Cek tokenURI(1)</button>
+<p id="checkResult"></p>
+<p><small>Nilai transaksi: 0 BNB. Estimasi gas sekitar 94.910 gas (~0,0000057 BNB di 0,06 gwei). Jangan kirim BNB ke kontrak lewat halaman ini.</small></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+<script>
+const CONTRACT = "0xEBCD1D87D13F78b8202434d95d400535de06c349";
+const OWNER = "0x504b36A0846Eb67F3f9Cdd5CDf074E26186d38E8";
+const ABI = ["function setBaseURI(string baseURI_) external","function tokenURI(uint256 tokenId) public view returns (string)","function owner() public view returns (address)"];
+let provider, signer, contract;
+const $ = id => document.getElementById(id);
+$("cid").addEventListener("input", () => {
+  const v = $("cid").value.trim().replace(/^ipfs:\/\//,"").replace(/\/+$/,"");
+  $("preview").textContent = v ? "ipfs://" + v + "/" : "ipfs://<CID>/";
+});
+$("connect").onclick = async () => {
+  try {
+    if (!window.ethereum) { $("wallet").textContent = "Wallet tidak ditemukan. Pasang MetaMask / Binance Web3 Wallet dulu, lalu refresh."; return; }
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    const net = await provider.getNetwork();
+    if (net.chainId !== 56n) { $("wallet").textContent = "Jaringan salah: pindah ke BNB Smart Chain Mainnet (56) dulu di wallet, lalu hubungkan lagi."; return; }
+    signer = await provider.getSigner();
+    const addr = await signer.getAddress();
+    contract = new ethers.Contract(CONTRACT, ABI, signer);
+    const owner = await contract.owner();
+    $("wallet").textContent = "Terhubung: " + addr + (addr.toLowerCase() === OWNER.toLowerCase() ? " ✓ (ini wallet owner)" : " ⚠️ INI BUKAN WALLET OWNER — transaksi akan ditolak kontrak.");
+    $("send").disabled = false;
+  } catch (e) { $("wallet").textContent = "Gagal menghubungkan: " + (e.message || e); }
+};
+$("send").onclick = async () => {
+  try {
+    const cid = $("cid").value.trim().replace(/^ipfs:\/\//,"").replace(/\/+$/,"");
+    if (!cid) { $("status").textContent = "Isi dulu Metadata CID-nya."; return; }
+    if (!contract) { $("status").textContent = "Hubungkan wallet dulu."; return; }
+    const uri = "ipfs://" + cid + "/";
+    $("status").textContent = "Mengirim setBaseURI(" + uri + ") — konfirmasi di wallet...";
+    const tx = await contract.setBaseURI(uri);
+    $("status").textContent = "Transaksi terkirim: " + tx.hash + " — menunggu konfirmasi...";
+    await tx.wait();
+    $("status").textContent = "✓ Sukses! Tx: " + tx.hash + " — baseURI sekarang " + uri;
+  } catch (e) { $("status").textContent = "Gagal: " + (e.message || e); }
+};
+$("check").onclick = async () => {
+  try {
+    const p = provider || new ethers.JsonRpcProvider("https://bsc-dataseed.bnbchain.org");
+    const c = new ethers.Contract(CONTRACT, ABI, p);
+    $("checkResult").textContent = "tokenURI(1) = " + await c.tokenURI(1);
+  } catch (e) { $("checkResult").textContent = "tokenURI(1) masih kosong / belum ada token #1: " + (e.message || e); }
+};
+</script>
+</body>
+</html>
