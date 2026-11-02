@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Echo Soul — Withdraw (Owner Only)</title>
+<style>
+body{font-family:system-ui,sans-serif;max-width:640px;margin:32px auto;padding:0 16px;background:#12081f;color:#fff}
+h1{color:#ffd166}.card{background:#1e1033;border:1px solid #3a2060;border-radius:12px;padding:16px;margin:16px 0}
+button{padding:12px 20px;border-radius:8px;border:0;background:#ff2e88;color:#fff;font-weight:bold;font-size:15px;cursor:pointer}
+button:disabled{opacity:.5}
+code{word-break:break-all;color:#22e6ff}
+small{color:#bbb}
+.warn{background:#3a1a1a;border:1px solid #7a2e2e}
+</style>
+</head>
+<body>
+<h1>🎵 Echo Soul — Withdraw</h1>
+<p>Halaman ini <b>hanya untuk owner</b>. Hanya wallet owner yang bisa memanggil <code>withdraw()</code> — wallet lain akan ditolak kontrak (revert).</p>
+<div class="card warn">
+<p><b>Penting:</b> <code>withdraw()</code> di kontrak ini <b>tidak punya parameter tujuan</b> — seluruh saldo kontrak otomatis dikirim ke wallet owner, bukan ke wallet lain. Jadi dana akan masuk ke wallet owner di bawah, bukan ke baw.</p>
+</div>
+<div class="card">
+<p><b>Kontrak:</b> <code>0xd1352B183824aF535303FADd7f5C110B22c51b8D</code><br>
+<b>Wallet owner:</b> <code>0x68B51957d592581e50A006E56864f07B71C63fA0</code><br>
+<b>Jaringan:</b> BNB Smart Chain Mainnet (chain 56)<br>
+<b>Saldo kontrak saat ini:</b> <code id="balance">memuat…</code></p>
+<button id="connect">1. Hubungkan Wallet</button>
+<p id="wallet">Belum terhubung.</p>
+</div>
+<div class="card">
+<p><b>2. Tarik seluruh saldo ke wallet owner</b></p>
+<button id="send" disabled>Withdraw</button>
+<p id="status"></p>
+<p><small>Nilai transaksi: 0 BNB (hanya gas). Jangan kirim BNB ke kontrak lewat halaman ini. Setelah sukses, cek saldo kontrak di atas — seharusnya menjadi 0 — dan cek saldo wallet owner bertambah.</small></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+<script>
+const CONTRACT = "0xd1352B183824aF535303FADd7f5C110B22c51b8D";
+const OWNER = "0x68B51957d592581e50A006E56864f07B71C63fA0";
+const ABI = ["function withdraw() external","function owner() public view returns (address)"];
+let provider, signer, contract;
+const $ = id => document.getElementById(id);
+async function refreshBalance(){
+  try {
+    const p = new ethers.JsonRpcProvider("https://bsc-dataseed.bnbchain.org");
+    const bal = await p.getBalance(CONTRACT);
+    $("balance").textContent = ethers.formatEther(bal) + " BNB";
+  } catch(e){ $("balance").textContent = "gagal memuat"; }
+}
+refreshBalance();
+$("connect").onclick = async () => {
+  try {
+    if (!window.ethereum) { $("wallet").textContent = "Tidak ada wallet browser terdeteksi."; return; }
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    const net = await provider.getNetwork();
+    if (Number(net.chainId) !== 56) { $("wallet").textContent = "Jaringan salah — pindah ke BNB Smart Chain Mainnet (56)."; return; }
+    signer = await provider.getSigner();
+    const addr = await signer.getAddress();
+    contract = new ethers.Contract(CONTRACT, ABI, signer);
+    const owner = await contract.owner();
+    $("wallet").textContent = "Terhubung: " + addr + (addr.toLowerCase() === owner.toLowerCase() ? " ✅ (owner)" : " ❌ BUKAN owner — withdraw akan gagal.");
+    $("send").disabled = addr.toLowerCase() !== owner.toLowerCase();
+  } catch(e){ $("wallet").textContent = "Gagal terhubung: " + (e.message || e); }
+};
+$("send").onclick = async () => {
+  try {
+    $("status").textContent = "Mengirim transaksi…";
+    const tx = await contract.withdraw();
+    $("status").innerHTML = "Tx terkirim: <code>" + tx.hash + "</code> — menunggu konfirmasi…<br><a href=\"https://bscscan.com/tx/" + tx.hash + "\" target=\"_blank\" rel=\"noopener\">Lihat di BscScan</a>";
+    await tx.wait();
+    $("status").innerHTML = "✅ Withdraw sukses! Tx: <code>" + tx.hash + "</code><br><a href=\"https://bscscan.com/tx/" + tx.hash + "\" target=\"_blank\" rel=\"noopener\">Lihat di BscScan</a>";
+    refreshBalance();
+  } catch(e){ $("status").textContent = "Gagal: " + (e.message || e); }
+};
+</script>
+</body>
+</html>
