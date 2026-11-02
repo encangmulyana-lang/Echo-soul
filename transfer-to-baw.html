@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Echo Soul — Transfer Ownership ke baw (Owner Only)</title>
+<style>
+body{font-family:system-ui,sans-serif;max-width:640px;margin:32px auto;padding:0 16px;background:#12081f;color:#fff}
+h1{color:#ffd166}.card{background:#1e1033;border:1px solid #3a2060;border-radius:12px;padding:16px;margin:16px 0}
+button{padding:12px 20px;border-radius:8px;border:0;background:#ff2e88;color:#fff;font-weight:bold;font-size:15px;cursor:pointer}
+button:disabled{opacity:.5}
+code{word-break:break-all;color:#22e6ff}
+small{color:#bbb}
+.warn{background:#3a1a1a;border:1px solid #7a2e2e}
+</style>
+</head>
+<body>
+<h1>🎵 Echo Soul — Transfer Ownership ke baw</h1>
+<div class="card warn">
+<p><b>PERINGATAN — tidak bisa dibatalkan begitu dikonfirmasi:</b> setelah transfer sukses, hanya owner baru yang bisa <code>setBaseURI</code>, <code>setMintOpen</code>, dan <code>withdraw</code>. Owner lama kehilangan semua hak itu.</p>
+<p>Transfer ini SATU ARAH dalam arti: mengembalikannya nanti butuh tanda tangan lagi dari owner baru (baw, lewat saya) — jadi pastikan ini memang yang kamu mau.</p>
+</div>
+<div class="card">
+<p><b>Kontrak:</b> <code>0xd1352B183824aF535303FADd7f5C110B22c51b8D</code><br>
+<b>Owner saat ini:</b> <code>0x68B51957d592581e50A006E56864f07B71C63fA0</code><br>
+<b>Owner baru (tujuan):</b> <code>0xf5C6EE4d1b236CCbBC1F950255Ea2dEb0A09d77A</code> (baw / My Wallet)<br>
+<b>Jaringan:</b> BNB Smart Chain Mainnet (chain 56)</p>
+<button id="connect">1. Hubungkan Wallet Owner Saat Ini</button>
+<p id="wallet">Belum terhubung.</p>
+</div>
+<div class="card">
+<p><b>2. Transfer ownership ke baw</b></p>
+<button id="send" disabled>Transfer Ownership ke baw</button>
+<p id="status"></p>
+<p><small>Nilai transaksi: 0 BNB (hanya gas, kecil). Setelah sukses, withdraw Echo Soul berikutnya bisa dijalankan lewat baw. Jangan kirim BNB ke kontrak lewat halaman ini.</small></p>
+</div>
+<div class="card">
+<h3>Cek hasil</h3>
+<button id="check">Cek owner sekarang</button>
+<p id="checkResult"></p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+<script>
+const CONTRACT = "0xd1352B183824aF535303FADd7f5C110B22c51b8D";
+const OWNER = "0x68B51957d592581e50A006E56864f07B71C63fA0";
+const NEW_OWNER = "0xf5C6EE4d1b236CCbBC1F950255Ea2dEb0A09d77A";
+const ABI = ["function transferOwnership(address newOwner) external","function owner() public view returns (address)"];
+let provider, signer, contract;
+const $ = id => document.getElementById(id);
+async function checkOwner(){
+  try {
+    const p = new ethers.JsonRpcProvider("https://bsc-dataseed.bnbchain.org");
+    const c = new ethers.Contract(CONTRACT, ABI, p);
+    const o = await c.owner();
+    $("checkResult").textContent = "Owner sekarang: " + o + (o.toLowerCase() === NEW_OWNER.toLowerCase() ? " ✅ sudah baw" : o.toLowerCase() === OWNER.toLowerCase() ? " (masih owner lama)" : "");
+  } catch(e){ $("checkResult").textContent = "Gagal cek: " + (e.message || e); }
+}
+checkOwner();
+$("check").onclick = checkOwner;
+$("connect").onclick = async () => {
+  try {
+    if (!window.ethereum) { $("wallet").textContent = "Tidak ada wallet browser terdeteksi."; return; }
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    const net = await provider.getNetwork();
+    if (Number(net.chainId) !== 56) { $("wallet").textContent = "Jaringan salah — pindah ke BNB Smart Chain Mainnet (56)."; return; }
+    signer = await provider.getSigner();
+    const addr = await signer.getAddress();
+    contract = new ethers.Contract(CONTRACT, ABI, signer);
+    const owner = await contract.owner();
+    $("wallet").textContent = "Terhubung: " + addr + (addr.toLowerCase() === owner.toLowerCase() ? " ✅ (owner saat ini)" : " ❌ BUKAN owner — transfer akan gagal.");
+    $("send").disabled = addr.toLowerCase() !== owner.toLowerCase();
+  } catch(e){ $("wallet").textContent = "Gagal terhubung: " + (e.message || e); }
+};
+$("send").onclick = async () => {
+  try {
+    if (!confirm("Transfer ownership Echo Soul dari 0x68B5… ke baw 0xf5C6…? Ini tidak bisa dibatalkan setelah dikonfirmasi, dan owner lama kehilangan hak setBaseURI/setMintOpen/withdraw.")) return;
+    $("status").textContent = "Mengirim transferOwnership ke baw — konfirmasi di wallet...";
+    const tx = await contract.transferOwnership(NEW_OWNER);
+    $("status").innerHTML = "Tx terkirim: <code>" + tx.hash + "</code> — menunggu konfirmasi…<br><a href=\"https://bscscan.com/tx/" + tx.hash + "\" target=\"_blank\" rel=\"noopener\">Lihat di BscScan</a>";
+    await tx.wait();
+    $("status").innerHTML = "✅ Transfer sukses! Tx: <code>" + tx.hash + "</code><br><a href=\"https://bscscan.com/tx/" + tx.hash + "\" target=\"_blank\" rel=\"noopener\">Lihat di BscScan</a>";
+    checkOwner();
+  } catch(e){ $("status").textContent = "Gagal: " + (e.message || e); }
+};
+</script>
+</body>
+</html>
